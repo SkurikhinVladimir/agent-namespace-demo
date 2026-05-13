@@ -41,6 +41,8 @@ SkillGen --> SkillLib
 | `git` | `pr`, `issue`, `repo` |
 | `skills` | `list`, `get`, `save`, `delete` |
 
+Each tool and command supports `args={"help": true}` for runtime discovery — the same idea as CLI `--help`, without the OS.
+
 
 ## Use Cases
 
