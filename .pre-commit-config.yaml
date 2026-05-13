@@ -25,3 +25,10 @@ repos:
         require_serial: true
         language: system
         types: [python]
+
+      - id: local-pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true

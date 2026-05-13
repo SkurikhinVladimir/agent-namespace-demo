@@ -1,30 +1,6 @@
 # Agent Namespace Demo
 
-4 tools instead of 50. A LangGraph ReAct agent built around the **namespace pattern**: one tool per domain, each with a `help` command for runtime self-discovery.
-
-```
-git(command="pr", args={"help": True})
-# → "pr [--action=create|list|merge] [--branch=NAME] [--title=TEXT] ..."
-```
-
-The agent doesn't need every argument baked into its weights — it reads the interface on demand, exactly like a developer reading a man page.
-
-## How it works
-
-```
-User message
-     │
-     ▼
-┌─────────────────────────────────────────────────┐
-│  LangGraph ReAct Agent                          │
-│                                                 │
-│  wiki(command, args)   tasks(command, args)     │
-│  git(command, args)    skills(command, args)    │
-│                                                 │
-│  Any command accepts args={"help": true}        │
-│  → returns usage string for self-discovery      │
-└─────────────────────────────────────────────────┘
-```
+A LangGraph ReAct agent with **4 namespace tools** instead of dozens of narrow ones. Each tool groups related commands under one interface and supports `args={"help": true}` so the agent can discover usage at runtime.
 
 ## Tools
 
@@ -56,7 +32,6 @@ cp .env.example .env          # set LLM_API_KEY
 uv sync
 uv run python demo.py         # interactive REPL (requires LLM_API_KEY)
 uv run python main.py         # static walkthrough, no API key needed
-uv run pytest
 ```
 
 ## Project layout
