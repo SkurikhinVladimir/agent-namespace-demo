@@ -1,40 +1,26 @@
-# Scenario 05 — Save a Skill
+# 05 — Save a Skill
 
-## User Request
+**User:** "Save a skill: after a PR is merged, mark the task as done."
 
-> "Save a skill: after a PR is merged, update the task state to done."
-
-## Steps
-
-1. User describes the skill in natural language.
-2. Agent structures it as a skill and saves it via `skills(command="save", ...)`.
-
-## Tool Calls
+## Tool calls
 
 ```python
 skills(command="save", args={
     "name": "update_task_after_review",
-    "description": "Update task state to done after PR is merged",
+    "description": "Merge PR and mark the task as done",
     "steps": [
         "1. Call git(command='pr', args={'action': 'merge', 'id': PR_ID}).",
         "2. Call tasks(command='save', args={'id': TASK_ID, 'state': 'done'}).",
         "3. Confirm to the user.",
     ],
 })
+# → "Skill 'update_task_after_review' saved."
 ```
 
-## Tool Response
+## Agent response
 
-```
-Skill 'update_task_after_review' saved.
-```
-
-## Final Agent Response
-
-```
-Skill saved: "update_task_after_review" — I'll remember to merge the PR and mark the task done.
-```
+> Saved skill "update_task_after_review". I'll remember: merge the PR, then mark the task done.
 
 ## Notes
 
-Skills are **instructions for the agent**, not executable objects. The agent reads a skill later with `skills(command="get", ...)` and then follows the steps using normal tools. Skills are only created on explicit user request.
+A skill is an **instruction for the agent**, not executable code. The agent reads it later with `skills.get` and then follows the steps using normal tools. Skills are only created on explicit user request.

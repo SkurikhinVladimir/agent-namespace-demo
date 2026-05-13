@@ -1,61 +1,29 @@
-# Scenario 06 — Reuse a Skill
+# 06 — Reuse a Skill
 
-## User Request
+**User:** "TASK-2 PR got approved. Wrap it up."
 
-> "TASK-2 PR is approved. Wrap it up."
+The agent recognises a "close out" intent, checks available skills, finds the relevant one, and follows its steps.
 
-## Steps
-
-1. Agent recognises a "close out a task" intent and checks available skills.
-2. Agent finds the `update_task_after_review` skill and reads it.
-3. Agent follows the skill steps: merges the PR and updates the task state.
-
-## Tool Calls
+## Tool calls
 
 ```python
-# Check available skills
 skills(command="list", args={})
+# → - create_pr_for_task: ...
+#   - update_task_after_review: Merge PR and mark the task as done
 
-# Read the relevant skill
 skills(command="get", args={"name": "update_task_after_review"})
+# → Steps:
+#   1. Call git(command='pr', args={'action': 'merge', 'id': PR_ID}).
+#   2. Call tasks(command='save', args={'id': TASK_ID, 'state': 'done'}).
+#   3. Confirm to the user.
 
-# Follow step 1: merge the PR
 git(command="pr", args={"action": "merge", "id": "PR-2"})
+# → "Pull request PR-2 merged."
 
-# Follow step 2: mark task as done
 tasks(command="save", args={"id": "TASK-2", "state": "done"})
+# → "Task TASK-2 updated."
 ```
 
-## Tool Responses
+## Agent response
 
-**skills.list:**
-```
-- create_pr_for_task: Create a pull request from a task ID
-- update_task_after_review: Update task state to done after PR is merged
-```
-
-**skills.get:**
-```
-Skill: update_task_after_review
-Description: Update task state to done after PR is merged
-Steps:
-1. Call git(command='pr', args={'action': 'merge', 'id': PR_ID}).
-2. Call tasks(command='save', args={'id': TASK_ID, 'state': 'done'}).
-3. Confirm to the user.
-```
-
-**git.pr merge:**
-```
-Pull request PR-2 merged.
-```
-
-**tasks.save:**
-```
-Task TASK-2 updated.
-```
-
-## Final Agent Response
-
-```
-Done! PR-2 merged and TASK-2 marked as done.
-```
+> Done — PR-2 merged and TASK-2 marked as done.

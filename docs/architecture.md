@@ -1,53 +1,58 @@
 # Architecture
 
-## Overview
+## Component diagram
 
-The agent is built on LangGraph's `create_react_agent`, which implements the ReAct (Reasoning + Acting) loop. The agent receives a user message, reasons about what to do, calls tools, observes results, and repeats until it can respond.
-
-## ReAct Loop
-
-```mermaid
-flowchart TD
-    User([User message]) --> Agent
-    Agent -->|reasoning| Decision{Need a tool?}
-    Decision -->|yes| ToolCall[Call namespace tool]
-    ToolCall --> Observation[Observe result]
-    Observation --> Agent
-    Decision -->|no| Response([Final response])
+```
+demo.py / main.py  (composition root)
+    │
+    ├── Settings          (pydantic-settings, reads .env)
+    ├── WikiTool          (mock pages)
+    ├── TasksTool         (mutable mock tasks)
+    ├── GitTool           (mutable mock PRs / issues / repos)
+    ├── SkillsTool        (mutable in-memory skills store)
+    │
+    └── build_agent(settings, wiki, tasks, git, skills)
+            │
+            ├── ChatOpenAI        (langchain-openai)
+            └── create_react_agent (langgraph)
+                    │
+                    └── [wiki_tool, tasks_tool, git_tool, skills_tool]
+                            (closures — capture injected instances)
 ```
 
-## Tool Flow
+## ReAct loop
 
-```mermaid
-flowchart LR
-    Agent -->|command + args| NamespaceTool
-    NamespaceTool -->|args.help == true?| HelpText[Return help string]
-    NamespaceTool -->|else| Dispatcher[Command dispatcher]
-    Dispatcher --> wiki_search[wiki: search / read / list]
-    Dispatcher --> tasks_list[tasks: list / get / save]
-    Dispatcher --> git_pr[git: pr / issue / repo]
-    Dispatcher --> skills_get[skills: list / get / save / delete]
+```
+User message
+    │
+    ▼
+Agent reasons → calls tool(command, args)
+    │
+    ├─ args.help == true? → return usage string
+    │
+    └─ dispatch to command handler
+            │
+            └─ return result string
+                    │
+                    ▼
+            Agent observes, reasons again
+                    │
+                    └─ no more tools needed → final response
 ```
 
-## Components
+## Key design decisions
 
-### `agent/tools/base.py`
-`NamespaceTool` — abstract base class. Every tool inherits it and implements two methods:
-- `_get_help(command)` — returns usage string
-- `_execute_command(command, args)` — dispatches to sub-commands
+**Dependency injection at composition root.**
+Tools are instantiated in `demo.py` / `main.py` and passed into `build_agent`. The tools themselves have no knowledge of the LLM or LangGraph. This makes them independently testable.
 
-### `agent/tools/*.py`
-Four concrete tools, each with in-memory mock data:
-- **WikiTool** — static pages dict
-- **TasksTool** — mutable tasks dict (supports save/update)
-- **GitTool** — mutable PRs, issues, repos lists
-- **SkillsTool** — mutable skills dict, pre-seeded with one example skill
+**Closures as LangChain tools.**
+`build_agent` defines `@tool`-decorated functions as closures that capture injected tool instances. This avoids module-level singletons (global mutable state).
 
-### `agent/graph.py`
-Wraps each tool as a LangChain `@tool` function and passes them to `create_react_agent`. The LLM is configured from environment variables (`LLM_MODEL`, `LLM_BASE_URL`, `LLM_API_KEY`).
+**`NamespaceTool` ABC.**
+All tools share a single `execute(command, args)` entry point. The `help` check lives in the base class — concrete tools only implement `_get_help` and `_execute_command`.
 
-### `demo.py`
-Interactive REPL. Maintains message history so the agent has conversation context. Prints tool calls and results in colour.
+**All config via Pydantic Settings.**
+`Settings` validates environment variables at startup. Missing `LLM_API_KEY` fails immediately with a clear error, not at the first LLM call.
 
-### `main.py`
-Calls tools directly without a LLM — useful for verifying mock data and tool logic.
+**Mock data is module-level constants.**
+`_SEED` dicts are constants (never mutated). Instance state is initialised with `deepcopy(_SEED)` so each `TasksTool()` / `GitTool()` / `SkillsTool()` starts from the same known state and is isolated from other instances.

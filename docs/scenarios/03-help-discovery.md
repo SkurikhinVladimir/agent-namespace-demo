@@ -1,44 +1,25 @@
-# Scenario 03 — Help Discovery
+# 03 — Help Discovery
 
-## User Request
+**User:** "Create a PR for the auth work."
 
-> "Create a PR for the auth work."
+The agent knows the `git` tool exists but is unsure of the exact PR arguments. It calls `help` first.
 
-## Steps
-
-1. Agent knows the `git` tool exists but is unsure about exact PR arguments.
-2. Agent calls `git` with `command="pr"` and `args={"help": true}` to discover the interface.
-3. Tool returns usage string.
-4. Agent now knows the required arguments and calls `git` again to create the PR.
-
-## Tool Calls
+## Tool calls
 
 ```python
-# Step 1: discover arguments
+# Step 1 — discover the interface
 git(command="pr", args={"help": True})
+# → "pr [--action=create|list|merge] [--branch=NAME] [--title=TEXT] [--id=ID] [--state=open|merged]"
 
-# Step 2: create PR with correct args
+# Step 2 — act with correct arguments
 git(command="pr", args={"action": "create", "branch": "feature/auth", "title": "Implement auth"})
+# → "Pull request PR-4 created: 'Implement auth' from branch 'feature/auth'."
 ```
 
-## Tool Responses
+## Agent response
 
-**Step 1:**
-```
-pr [--action=create|list|merge] [--branch=NAME] [--title=TEXT] [--state=open|merged]
-```
+> Done — PR-4 created: "Implement auth" from branch `feature/auth`.
 
-**Step 2:**
-```
-Pull request PR-4 created: 'Implement auth' from branch 'feature/auth'.
-```
+## Why this matters
 
-## Final Agent Response
-
-```
-Done! PR-4 created: "Implement auth" from branch feature/auth.
-```
-
-## Notes
-
-This is the key benefit of the namespace pattern: the agent can **self-document** through help calls instead of requiring the LLM to memorise every argument schema.
+This is the core benefit of the namespace pattern: the agent can **self-document** through a `help` call instead of needing every argument baked into the LLM's weights.

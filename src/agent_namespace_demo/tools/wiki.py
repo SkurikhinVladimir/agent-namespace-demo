@@ -1,12 +1,16 @@
-from .base import NamespaceTool
+import logging
 
-WIKI_HELP = {
+from agent_namespace_demo.tools.base import NamespaceTool
+
+logger = logging.getLogger(__name__)
+
+_HELP: dict[str, str] = {
     "search": "search --query=TEXT — search pages by keyword",
     "read": "read --page_id=ID — read a wiki page by its ID",
     "list": "list — list all available wiki pages",
 }
 
-MOCK_PAGES = {
+_PAGES: dict[str, dict[str, str]] = {
     "deploy-guide": {
         "id": "deploy-guide",
         "title": "Deployment Guide",
@@ -23,7 +27,6 @@ MOCK_PAGES = {
         "title": "Developer Onboarding",
         "content": (
             "# Developer Onboarding\n\n"
-            "Welcome! Follow these steps:\n"
             "1. Clone the repo and run `make setup`.\n"
             "2. Copy `.env.example` to `.env` and fill in secrets.\n"
             "3. Run `make dev` to start the local stack."
@@ -44,33 +47,31 @@ MOCK_PAGES = {
 
 class WikiTool(NamespaceTool):
     def _get_help(self, command: str) -> str:
-        if command in WIKI_HELP:
-            return WIKI_HELP[command]
-        lines = ["Available commands:"] + [f"  {v}" for v in WIKI_HELP.values()]
-        return "\n".join(lines)
+        if command in _HELP:
+            return _HELP[command]
+        return "Available commands:\n" + "\n".join(f"  {v}" for v in _HELP.values())
 
-    def _execute_command(self, command: str, args: dict) -> str:
+    def _execute_command(self, command: str, args: dict[str, object]) -> str:
+        logger.debug("wiki %s args=%s", command, args)
         if command == "search":
-            query = args.get("query", "").lower()
-            results = [
-                f"- {p['id']}: {p['title']}"
-                for p in MOCK_PAGES.values()
-                if query in p["title"].lower() or query in p["content"].lower()
-            ]
-            return "\n".join(results) if results else "No pages found."
-
+            return self._search(str(args.get("query", "")))
         if command == "read":
-            page_id = args.get("page_id", "")
-            page = MOCK_PAGES.get(page_id)
-            if not page:
-                return f"Page '{page_id}' not found. Use wiki(command='list') to see available pages."
-            return page["content"]
-
+            return self._read(str(args.get("page_id", "")))
         if command == "list":
-            lines = [f"- {p['id']}: {p['title']}" for p in MOCK_PAGES.values()]
-            return "\n".join(lines)
-
+            return "\n".join(f"- {p['id']}: {p['title']}" for p in _PAGES.values())
         return f"Unknown command '{command}'. Use wiki(command='list', args={{'help': true}}) for help."
 
+    def _search(self, query: str) -> str:
+        q = query.lower()
+        hits = [
+            f"- {p['id']}: {p['title']}"
+            for p in _PAGES.values()
+            if q in p["title"].lower() or q in p["content"].lower()
+        ]
+        return "\n".join(hits) if hits else "No pages found."
 
-wiki_tool = WikiTool()
+    def _read(self, page_id: str) -> str:
+        page = _PAGES.get(page_id)
+        if page is None:
+            return f"Page '{page_id}' not found. Use wiki(command='list') to see available pages."
+        return page["content"]

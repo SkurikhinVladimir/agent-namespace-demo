@@ -1,23 +1,14 @@
-# Scenario 02 — Task Details
+# 02 — Task Details
 
-## User Request
+**User:** "Tell me more about TASK-1."
 
-> "Tell me more about TASK-1."
-
-## Steps
-
-1. Agent calls `tasks` with `command="get"` and `id="TASK-1"`.
-2. Tool returns full task details including branch name and description.
-3. Agent presents the details.
-
-## Tool Calls
+## Tool calls
 
 ```python
 tasks(command="get", args={"id": "TASK-1"})
 ```
 
-## Tool Response
-
+**Result:**
 ```
 ID: TASK-1
 Title: Implement auth
@@ -27,11 +18,6 @@ Branch: feature/auth
 Description: Add JWT-based authentication to the API.
 ```
 
-## Final Agent Response
+## Agent response
 
-```
-TASK-1: Implement auth
-- State: started
-- Branch: feature/auth
-- Description: Add JWT-based authentication to the API.
-```
+> TASK-1 "Implement auth" is in progress on branch `feature/auth`. Description: Add JWT-based authentication to the API.

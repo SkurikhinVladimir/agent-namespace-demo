@@ -1,78 +1,33 @@
-# Scenario 07 — Multi-Step Workflow
+# 07 — Multi-Step Workflow
 
-## User Request
+**User:** "Starting on TASK-1. Find the deploy docs, open a PR, and move the task to in_review."
 
-> "I'm starting on TASK-1. Find the deploy docs, create a PR, and mark the task as in_review."
-
-## Steps
-
-1. Fetch task details to get branch and title.
-2. Search wiki for deployment documentation.
-3. Create a PR from the task's branch.
-4. Update the task state to `in_review`.
-
-## Tool Calls
+## Tool calls
 
 ```python
-# Step 1: get task details
 tasks(command="get", args={"id": "TASK-1"})
+# → branch: feature/auth, title: Implement auth
 
-# Step 2: search wiki for deploy docs
 wiki(command="search", args={"query": "deploy"})
+# → - deploy-guide: Deployment Guide
 
-# Step 3: read the relevant page
 wiki(command="read", args={"page_id": "deploy-guide"})
+# → # Deployment Guide …
 
-# Step 4: create PR
 git(command="pr", args={"action": "create", "branch": "feature/auth", "title": "Implement auth"})
+# → "Pull request PR-4 created."
 
-# Step 5: update task state
 tasks(command="save", args={"id": "TASK-1", "state": "in_review"})
+# → "Task TASK-1 updated."
 ```
 
-## Tool Responses
+## Agent response
 
-**tasks.get:**
-```
-ID: TASK-1
-Title: Implement auth
-State: started
-Branch: feature/auth
-Description: Add JWT-based authentication to the API.
-```
-
-**wiki.search:**
-```
-- deploy-guide: Deployment Guide
-```
-
-**wiki.read:**
-```
-# Deployment Guide
-1. Run `make build` to build the Docker image.
-2. Push to registry: `make push`.
-...
-```
-
-**git.pr create:**
-```
-Pull request PR-4 created: 'Implement auth' from branch 'feature/auth'.
-```
-
-**tasks.save:**
-```
-Task TASK-1 updated.
-```
-
-## Final Agent Response
-
-```
-All done for TASK-1:
-- Found deploy guide in the wiki.
-- PR-4 created from branch feature/auth.
-- Task state updated to in_review.
-```
+> All set for TASK-1:
+> - Deploy guide found in the wiki.
+> - PR-4 opened from `feature/auth`.
+> - Task moved to in_review.
 
 ## Notes
 
-This scenario shows the full ReAct loop across four different tools. The agent coordinates information from `tasks` to drive actions in `git`, while also fetching context from `wiki` — all in a single conversational turn.
+Five tool calls across three different namespace tools, all driven by a single user message. The agent coordinates data from `tasks` → `wiki` → `git` → `tasks` in one ReAct pass.
