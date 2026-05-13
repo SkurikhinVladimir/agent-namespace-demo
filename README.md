@@ -1,6 +1,13 @@
-# agent-namespace-demo
+# Agent Namespace Demo
 
-A demonstration of the **Tool Namespace Pattern** — a LangGraph agent that uses four broad namespace tools instead of dozens of narrow ones. Each tool exposes a `command` parameter and a built-in `help` mechanism so the agent can discover available sub-commands at runtime.
+4 tools instead of 50. A LangGraph ReAct agent built around the **namespace pattern**: one tool per domain, each with a `help` command for runtime self-discovery.
+
+```
+git(command="pr", args={"help": True})
+# → "pr [--action=create|list|merge] [--branch=NAME] [--title=TEXT] ..."
+```
+
+The agent doesn't need every argument baked into its weights — it reads the interface on demand, exactly like a developer reading a man page.
 
 ## How it works
 
@@ -19,11 +26,18 @@ User message
 └─────────────────────────────────────────────────┘
 ```
 
-Instead of 50 narrow tools, the agent has 4. When it is unsure about arguments, it calls `help` first and then acts — exactly like a developer reading a man page.
+## Tools
 
-## Scenarios
+| Tool | Commands | Mock data |
+|------|----------|-----------|
+| `wiki` | `search`, `read`, `list` | 3 static pages |
+| `tasks` | `list`, `get`, `save` | 3 tasks (mutable) |
+| `git` | `pr`, `issue`, `repo` | PRs / issues / repos (mutable) |
+| `skills` | `list`, `get`, `save`, `delete` | 1 pre-seeded skill (mutable) |
 
-The [`docs/scenarios/`](docs/scenarios/) directory walks through concrete agent dialogues:
+## Use Cases
+
+Each file in [`docs/scenarios/`](docs/scenarios/) is a static message history trace — system prompt, user message, assistant tool calls, tool results, final response.
 
 | # | Scenario | Demonstrates |
 |---|----------|-------------|
@@ -35,21 +49,6 @@ The [`docs/scenarios/`](docs/scenarios/) directory walks through concrete agent 
 | [06](docs/scenarios/06-reuse-skill.md) | Agent reuses a saved skill | skill-guided execution |
 | [07](docs/scenarios/07-multi-step-workflow.md) | Full workflow: task → wiki → PR → update | end-to-end |
 
-## Tools
-
-| Tool | Commands | Mock data |
-|------|----------|-----------|
-| `wiki` | `search`, `read`, `list` | 3 static pages |
-| `tasks` | `list`, `get`, `save` | 3 tasks (mutable) |
-| `git` | `pr`, `issue`, `repo` | PRs / issues / repos (mutable) |
-| `skills` | `list`, `get`, `save`, `delete` | 1 pre-seeded skill (mutable) |
-
-Every command supports `args={"help": true}`:
-```python
-git(command="pr", args={"help": True})
-# → "pr [--action=create|list|merge] [--branch=NAME] [--title=TEXT] ..."
-```
-
 ## Quickstart
 
 ```bash
@@ -57,33 +56,35 @@ cp .env.example .env          # set LLM_API_KEY
 uv sync
 uv run python demo.py         # interactive REPL (requires LLM_API_KEY)
 uv run python main.py         # static walkthrough, no API key needed
-uv run pytest                 # run tests
+uv run pytest
 ```
 
 ## Project layout
 
 ```
-src/agent_namespace_demo/
-├── config.py          # Pydantic Settings (LLM_API_KEY, LLM_MODEL, …)
-├── graph.py           # builds LangGraph ReAct agent — dependencies injected
-├── repl.py            # interactive REPL logic
-├── static_demo.py     # static scenario runner
-└── tools/
-    ├── base.py        # NamespaceTool ABC
-    ├── wiki.py
-    ├── tasks.py
-    ├── git.py
-    └── skills.py
-tests/                 # pytest, one file per tool
-docs/
-├── architecture.md    # component diagram + ReAct loop
-├── namespace-pattern.md
-└── scenarios/         # 7 annotated dialogue examples
-demo.py                # entry point — wires deps, starts REPL
-main.py                # entry point — wires deps, runs static demo
+agent-namespace-demo/
+├── demo.py                        # interactive REPL entry point
+├── main.py                        # static walkthrough entry point
+├── pyproject.toml
+├── src/
+│   └── agent_namespace_demo/
+│       ├── config.py              # LLM_API_KEY, LLM_MODEL, LLM_BASE_URL
+│       ├── graph.py               # LangGraph ReAct agent
+│       ├── repl.py                # interactive REPL
+│       ├── static_demo.py
+│       └── tools/
+│           ├── base.py            # NamespaceTool ABC
+│           ├── wiki.py
+│           ├── tasks.py
+│           ├── git.py
+│           └── skills.py
+├── tests/
+│   ├── test_wiki.py
+│   ├── test_tasks.py
+│   ├── test_git.py
+│   └── test_skills.py
+└── docs/
+    ├── architecture.md
+    ├── namespace-pattern.md
+    └── scenarios/                 # 7 message history traces
 ```
-
-## Further reading
-
-- [Architecture](docs/architecture.md) — component diagram, ReAct loop, design decisions
-- [Namespace Pattern](docs/namespace-pattern.md) — motivation, trade-offs, when to use
